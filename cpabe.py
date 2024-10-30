@@ -24,6 +24,10 @@ def str_to_int_mod_p(s, p):
     result = num % p
     return result
 
+def str_to_int_unicode_mod_p(text, p):
+    # 将字符串中每个字符转换为Unicode码点值
+    return sum(ord(char) for char in text) % p
+
 # initialization function
 def setup() -> tuple:
     # 初始化曲线参数
@@ -55,7 +59,7 @@ def pubKG(pm: tuple, mk: int, pk_id, attributes: list[int]):
     # 定义用户属性
     k = len(attributes)
 
-    # 生成长度为k+1的随机数组
+    # 生成长度为 k+1 的随机数组
     random_array = [big.rand(curve.r) for _ in range(k + 1)]
     pk_1 = mk * pk_id
     pk_1 = pk_1.add(random_array[0] * w)
@@ -127,37 +131,6 @@ def find_intersection(list1, list2):
     set1 = set(list1)
     set2 = set(list2)
     return list(set1.intersection(set2))
-
-def solve_equation(A, B):
-    A_pseudo_inverse = np.linalg.pinv(A)
-    # 计算近似的 w
-    w = B @ A_pseudo_inverse
-    # 计算 w * A 与 B 的差距
-    difference = np.allclose(w @ A, B, atol=1e-8)
-
-    if difference:
-        return w
-    else:
-        return None
-    # A_T = A.T
-    # B_T = B.T
-    #
-    # try:
-    #     # 首先尝试使用 np.linalg.solve
-    #     w_T = np.linalg.solve(A_T, B_T)
-    #     return w_T.T  # 转置回原始形状
-    # except np.linalg.LinAlgError:
-    #     # 如果 solve 失败，则使用 lstsq
-    #     try:
-    #         w_T, residuals, rank, s = np.linalg.lstsq(A_T, B_T, rcond=None)
-    #         error = np.max(np.abs(np.dot(w_T, A_T) - B_T))
-    #         if error < 1e-8:
-    #             return w_T.T
-    #         else:
-    #             return w_T.T
-    #     except np.linalg.LinAlgError:
-    #         return None
-
 
 def find_integer_w(A, B):
     # 构造增广矩阵 [A.T | B.T]
@@ -247,10 +220,10 @@ def Transform(pk_list, access_structure, A1, A2, CT):
         return None
     else:
         # 构造M的子矩阵
-        M_1 = np.array([M[i-1] for i in I])
+        M_1 = np.array([M[A1.index(i)] for i in I])
+        print(f"M1=\n{M_1}")
         # 构造向量[1,0,0,...,0]，长度为len(I)
         B = np.array([1] + [0] * (len(access_structure[0])-1))
-        # w = solve_equation(M_1, B)
         w = find_integer_w(M_1, B)
 
         if w is None:
@@ -262,9 +235,9 @@ def Transform(pk_list, access_structure, A1, A2, CT):
             for i in range(len(I)):
                 if w[i] == 0:
                     continue
-                tmp1 = pair.e(pk_2, c_2[I[i]-1])
-                tmp2 = pair.e(pk_3[i], c_3[I[i]-1])
-                tmp3 = pair.e(c_4[I[i]-1], pk_4[i])
+                tmp1 = pair.e(pk_2, c_2[A1.index(I[i])])
+                tmp2 = pair.e(pk_3[A2.index(I[i])], c_3[A1.index(I[i])])
+                tmp3 = pair.e(c_4[A1.index(I[i])], pk_4[A2.index(I[i])])
                 tmp = tmp1 * tmp2 * tmp3
                 tmp = tmp.pow(w[i])
                 C_0.append(tmp)

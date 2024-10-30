@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 
 # 定义全局变量
-cpabe_pm, cpabe_mk, cpabe_rid, cpabe_sk, cpabe_pk, cpabe_pk_list, user_attributes, sender_attributes, access_structure, message, cpabe_ciphertext, policy_attributes = None, None, None, None, None, None, None, None, None, None, None, None
+cpabe_pm, cpabe_mk, cpabe_rid, cpabe_sk, cpabe_pk, cpabe_pk_list, user_attributes, sender_attributes, access_structure, message, cpabe_ciphertext, policy_attributes, str_user_attributes = None, None, None, None, None, None, None, None, None, None, None, None, None
 
 @app.route('/cpabe/setup', methods=['POST'])
 def cpabe_setup():
@@ -37,11 +37,12 @@ def cpabe_setup():
 
 @app.route('/cpabe/pubkg', methods=['POST'])
 def cpabe_pubkg():
-    global cpabe_pk_list, user_attributes
+    global cpabe_pk_list, user_attributes, str_user_attributes
     data = request.get_json()
     str_user_attributes = data.get('user_attributes')
-    user_attributes = [policy_attributes.index(attr) + 1 for attr in str_user_attributes if attr in policy_attributes]
+    user_attributes = [cpabe.str_to_int_unicode_mod_p(attr, cpabe_pm[0]) for attr in str_user_attributes]
     print(f"user_attributes: {user_attributes}")
+    # user_attributes = [policy_attributes.index(attr) + 1 for attr in str_user_attributes if attr in policy_attributes]
     cpabe_pk_list = cpabe.pubKG(cpabe_pm, cpabe_mk, cpabe_pk, user_attributes)
     pk_1, pk_2, pk_3, pk_4 = cpabe_pk_list
     return jsonify({
@@ -61,7 +62,9 @@ def cpabe_encrypt():
     access_structure_msp, _ = policy.boolean_to_msp(bool_exp, False)
     policy_attributes = access_structure_msp.row_to_attrib
     access_structure = [[int(elem) for elem in row] for row in access_structure_msp.mat.tolist()]
-    sender_attributes = [i + 1 for i in range(len(policy_attributes))]
+    print(f"access_structure: {access_structure}")
+    # sender_attributes = [i + 1 for i in range(len(policy_attributes))]
+    sender_attributes = [cpabe.str_to_int_unicode_mod_p(attr, cpabe_pm[0]) for attr in policy_attributes]
     print(f"sender_attributes: {sender_attributes}")
     cpabe_ciphertext = cpabe.Encrypt(cpabe_pm, cpabe_mk, sender_attributes, access_structure, message)
     c_0, c_1, c_2, c_3, c_4 = cpabe_ciphertext
@@ -89,7 +92,10 @@ def cpabe_decrypt():
             "message": message
         }), 200
     else:
-        return jsonify({"error": "Decryption failed"}), 400
+        return jsonify({
+            "transform_ciphertext": base64.b64encode(transform_ciphertext.toBytes()).decode('utf-8'),
+            "error": "Decryption failed"
+        }), 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
