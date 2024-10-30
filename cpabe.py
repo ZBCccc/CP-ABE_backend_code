@@ -14,16 +14,6 @@ from bn254 import fp12
 from bn254 import pair
 
 
-# 将字符串转换为模p的整数
-def str_to_int_mod_p(s, p):
-    # 将字符串编码为字节
-    byte_representation = s.encode('utf-8')
-    # 将字节转换为整数
-    num = int.from_bytes(byte_representation, byteorder='big')
-    # 映射到域 Z_p
-    result = num % p
-    return result
-
 def str_to_int_unicode_mod_p(text, p):
     # 将字符串中每个字符转换为Unicode码点值
     return sum(ord(char) for char in text) % p
